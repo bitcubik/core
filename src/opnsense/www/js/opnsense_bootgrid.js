@@ -108,6 +108,7 @@ class UIBootgrid {
         this.totalKnown = false;
         this.paginationTotal = undefined;
         this.persistenceID = `${window.location.pathname}#${this.id}`;
+        this.dataAvailable = false;
 
         // wrapper-specific options
         this.options = {
@@ -146,6 +147,7 @@ class UIBootgrid {
             virtualDOM: false,
             stickySelect: false,
             triggerEditFor: null,
+            static: false, // no persistent storage, no resizable columns
             ...options
         };
 
@@ -172,15 +174,17 @@ class UIBootgrid {
             removeWarning: 'Remove selected item(s)?',
             noresultsfound: 'No results found!',
             refresh: 'Refresh',
-            ...$.fn.UIBootgrid.translations
+            ...$.fn.UIBootgrid.translations /* Passed in from default.volt */
         };
+
+        this.placeholder = $(`<span id="${this.id}-placeholder"></span>`);
 
         // wrapper-specific single version of truth of table layout
         this.gridView = null;
     }
 
     initialize() {
-        if (!localStorage.getItem(`tabulator-${this.persistenceID}-persistence`)) {
+        if (!localStorage.getItem(`tabulator-${this.persistenceID}-persistence`) || this.options.static) {
             // If the user didn't change anything on the table, assume we start blank
             Object.keys(localStorage)
                 .filter(key => key.startsWith(`tabulator-${this.persistenceID}`))
@@ -285,6 +289,12 @@ class UIBootgrid {
 
         if (!(bootGridOptions?.sorting ?? true)) {
             this.options.sorting = false;
+        }
+
+        if (bootGridOptions?.static ?? false) {
+            this.options.static = true;
+            this.compatOptions['resizable'] = false;
+            this.compatOptions['persistence'] = false;
         }
 
         if (compatOptions.get) this.crud.get = compatOptions.get;
@@ -472,7 +482,7 @@ class UIBootgrid {
                     title: field.label,
                     titleFormatter: this.options.headerFormatters[field?.headerFormatter] ?? null,
                     field: field.id,
-                    resizable: true,
+                    resizable: !this.options.static,
                     sequence: field.sequence ?? null,
                     headerSort: this.options.sorting,
                     cssClass: this.options.responsive ? 'opnsense-bootgrid-responsive' : '',
@@ -521,7 +531,7 @@ class UIBootgrid {
     }
 
     _setPersistence(value) {
-        if (value) {
+        if (value && !this.options.static) {
             localStorage.setItem(`tabulator-${this.persistenceID}-persistence`, value);
         } else {
             localStorage.removeItem(`tabulator-${this.persistenceID}-persistence`);
@@ -530,6 +540,7 @@ class UIBootgrid {
 
     _registerEvents() {
         this.table.on('dataLoading', () => {
+            this._getPlaceholder().html('');
             if (!this.navigationRendered) {
                 this._renderFooter();
                 this._populateColumnSelection();
@@ -556,9 +567,20 @@ class UIBootgrid {
                     const holderHeight = $(`#${this.id} .tabulator-tableholder`)[0].offsetHeight;
 
                     if (holderHeight > height) {
-                        // dead space, shrink
-                        const diff = holderHeight - height;
-                        this.table.setHeight((curTotalTableHeight - diff) + scollbarGutterOffset);
+                        if (!this.dataAvailable) {
+                            // console.log(this.id)
+                        // if (this.table.getData().length == 0) {
+                            // XXX
+                            // no results found, set to default row height
+                            // this.table.setHeight();
+                            this.normalizeRowHeight();
+                            // this.table.setHeight();
+                        } else {
+                            // dead space, shrink
+                            const diff = holderHeight - height;
+                            // const pad = this.dataAvailable ? 0 : 50;
+                            this.table.setHeight((curTotalTableHeight - diff) + scollbarGutterOffset);
+                        }
                         return;
                     }
 
@@ -586,11 +608,14 @@ class UIBootgrid {
 
             resizeObserver.observe($(`#${this.id} .tabulator-table`)[0]);
 
-            window.onresize = this._debounce(() => {
+            window.addEventListener('resize', this._debounce(() => {
                 // this is mainly intended for scaling the width of the table if
                 // the width of the window changes.
                 this.table.redraw();
-            });
+                if (!this.dataAvailable) {
+                    this._getPlaceholder().html(this.translations.noresultsfound);
+                }
+            }));
 
             if (this.options.virtualDOM) {
                 // Start watching for dynamically inserted DOM elements and trigger their tooltips and commands.
@@ -652,6 +677,13 @@ class UIBootgrid {
         });
 
         this.table.on('dataProcessed', () =>  {
+            if (this.table.getData().length == 0) {
+                this.dataAvailable = false;
+                this._getPlaceholder().html(this.translations.noresultsfound);
+            } else {
+                this.dataAvailable = true;
+            }
+
             this._onDataProcessed();
 
             // Check if the total amount of rows is known, if not, remove the "last page"
@@ -667,14 +699,21 @@ class UIBootgrid {
             this._onDataProcessed();
         }));
 
-        this.table.on('cellMouseEnter', (e, cell) => {
+        const onMouseEnter = (e, cell) => {
             // tooltip when ellipsis is used (overflow on text elements without children)
             let el = cell.getElement();
             let $el = $(el);
-            if (el.offsetWidth < el.scrollWidth && !$el.attr('title') && $el.children().length == 0){
+            if ($el.hasClass('tabulator-col')) {
+                // column header is structured a little different, get the right element first
+                $el = $el.find('> .tabulator-col-content > .tabulator-col-title-holder > .tabulator-col-title');
+            }
+            if ($el[0].offsetWidth < $el[0].scrollWidth && !$el.attr('title') && $el.children().length == 0){
                 $el.attr('title', $el.text()).tooltip({container: 'body', trigger: 'hover'}).tooltip('show');
             }
-        });
+        }
+
+        this.table.on('headerMouseEnter', onMouseEnter)
+        this.table.on('cellMouseEnter', onMouseEnter);
 
         this.table.on('rowSelected', (row) => {
             this.$element.trigger("selected.rs.jquery.bootgrid", [this.table.getSelectedData()]);
@@ -761,6 +800,9 @@ class UIBootgrid {
     }
 
     _tooltips() {
+        /* first hide everything that may already be active, XXX this may be too agressive */
+        $('.tooltip:visible').hide();
+
         this.$element.find(".bootgrid-tooltip").each((index, el) => {
             if ($(el).attr('title') !== undefined) {
                 // keep this tooltip
@@ -1061,7 +1103,7 @@ class UIBootgrid {
             },
             height: '20vh', /* represents the "no results found" view */
             resizable: "header",
-            placeholder: this._translate('noresultsfound'), // XXX: improve styling, can return a function returning HTML or a DOM node
+            placeholder: this.placeholder.prop('outerHTML'),
             layout: 'fitColumns',
             columns: this._parseColumns(),
 
@@ -1224,6 +1266,10 @@ class UIBootgrid {
         } else {
             this.table.replaceData();
         }
+    }
+
+    _getPlaceholder() {
+        return $(`#${this.id}-placeholder`);
     }
 
     /**

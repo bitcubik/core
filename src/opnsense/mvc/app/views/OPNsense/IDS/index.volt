@@ -237,6 +237,7 @@ POSSIBILITY OF SUCH DAMAGE.
         let gridRuleFilesInitialized = false;
         let gridInstalledRulesInitialized = false;
         let gridUserRulesInitialized = false;
+        let gridAlertsInitialized = false;
         $('a[data-toggle="tab"]').on('shown.bs.tab', function (e) {
             loadGeneralSettings();
             if (e.target.id == 'download_settings_tab') {
@@ -251,6 +252,7 @@ POSSIBILITY OF SUCH DAMAGE.
                         toggle:'/api/ids/settings/toggleRuleset/',
                         options:{
                             navigation:0,
+                            static: true,
                             formatters:{
                                 editor: function (column, row) {
                                     return "<button type=\"button\" class=\"btn btn-xs btn-default command-edit bootgrid-tooltip\" data-row-id=\"" + row.filename + "\"><span class=\"fa fa-pencil fa-fw\"></span></button>";
@@ -402,7 +404,7 @@ POSSIBILITY OF SUCH DAMAGE.
                 /**
                  * grid query alerts
                  */
-                if (!$("#grid-alerts").hasClass('bootgrid-table')) {
+                if (!gridAlertsInitialized) {
                     var grid_alerts = $("#grid-alerts").UIBootgrid({
                         search:'/api/ids/service/query_alerts',
                         get:'/api/ids/service/get_alert_info/',
@@ -561,6 +563,9 @@ POSSIBILITY OF SUCH DAMAGE.
                                 });
                         }).end();
                   });
+                  gridAlertsInitialized = true;
+                } else {
+                    $("#grid-alerts").bootgrid('reload');
                 }
             } else if (e.target.id == 'userrules_tab') {
                 if (!gridUserRulesInitialized) {

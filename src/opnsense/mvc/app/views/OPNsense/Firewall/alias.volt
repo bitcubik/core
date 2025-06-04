@@ -141,7 +141,7 @@
                 });
                 $("#network_content").selectpicker('refresh');
             });
-            $(".category-item").tooltip();
+            $(".category-item").tooltip({container: 'body'});
         }).on("load.rs.jquery.bootgrid", function (e){
             // reload categories before grid load
             ajaxCall('/api/firewall/alias/list_categories', {}, function(data, status){
