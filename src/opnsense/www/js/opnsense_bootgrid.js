@@ -102,6 +102,7 @@ class UIBootgrid {
     constructor(id, options = {}, crud = {}, tabulatorOptions = {}) {
         // wrapper-specific state variables
         this.id = id;
+        this.dataIdentifier = null;
         this.$element = $(`#${id}`);
         this.table = null;
         this.searchPhrase = "";
@@ -131,7 +132,7 @@ class UIBootgrid {
             },
             requestHandler: (request) => request,
             responseHandler: (response) => response,
-            datakey: 'uuid',
+            datakey: 'uuid', // Only used for command button identification
             resetButton: true,
             searchSettings: {
                 delay: 1000
@@ -413,6 +414,11 @@ class UIBootgrid {
 
             for (const [colId, val] of Object.entries(this.compatColumns)) {
                 let data = val.data;
+
+                // pick the first column marked as identifier to be used as ID (values returned by getSelectedRows etc.)
+                if (this.dataIdentifier === null && data.identifier !== undefined && data.identifier) {
+                    this.dataIdentifier = colId;
+                }
 
                 for (const [option, value] of Object.entries(data)) {
                     data[option] = value === '' ? null : value;
@@ -723,7 +729,7 @@ class UIBootgrid {
             // for both the selection & deselection, while we only want to know
             // the last known action.
             if (this.options.stickySelect && data.length == 0) {
-                this.table.selectRow(deselected[0].getData()[this.options.datakey]);
+                this.table.selectRow(deselected[0].getData()[this.dataIdentifier]);
             }
         }));
 
@@ -1064,7 +1070,7 @@ class UIBootgrid {
     tabulatorDefaults() {
         return {
             autoResize: false,
-            index: this.options.datakey,
+            index: this.dataIdentifier,
             renderVertical:"basic",
             persistence: {
                 sort: true,
@@ -1233,7 +1239,7 @@ class UIBootgrid {
 
     /**
      * set current page and scroll to row
-     * @param {*} id datakey option value
+     * @param {*} id dataIdentifier option value
      */
     setPageByRowId(id) {
         let page = parseInt((id / this.curRowCount) + 1);
@@ -1761,7 +1767,7 @@ class UIBootgrid {
     }
 
     getSelectedRows() {
-        return this.table.getSelectedData().map(row => row[this.options.datakey]);
+        return this.table.getSelectedData().map(row => row[this.dataIdentifier]);
     }
 
     getCurrentRows() {
