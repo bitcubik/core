@@ -183,7 +183,7 @@ class UIBootgrid {
             ...$.fn.UIBootgrid.translations /* Passed in from default.volt */
         };
 
-        this.placeholder = $(`<span id="${this.id}-placeholder"></span>`);
+        this.placeholder = $(`<span id="${this.id}-placeholder" class="bootgrid-placeholder"></span>`);
 
         // wrapper-specific single version of truth of table layout
         this.gridView = null;
@@ -558,7 +558,6 @@ class UIBootgrid {
             // Dynamically adjust table height to prevent dead space
             // (workaround for https://github.com/olifolkerd/tabulator/issues/4419: maxHeight does not work without a fixed height)
             if (!this.originalTableHeight) {
-                // this.originalTableHeight = parseInt(parseInt(this.table.options.height) * window.innerHeight / 100);
                 // allow content to grow to 60vh
                 // XXX needs option
                 this.originalTableHeight = parseInt(parseInt(60) * window.innerHeight / 100);
@@ -574,7 +573,7 @@ class UIBootgrid {
 
                     if (holderHeight > height) {
                         if (!this.dataAvailable) {
-                            this.normalizeRowHeight();
+                            this.table.setHeight(120); // default tabulator height
                         } else {
                             // dead space, shrink
                             const diff = holderHeight - height;
@@ -611,9 +610,6 @@ class UIBootgrid {
                 // this is mainly intended for scaling the width of the table if
                 // the width of the window changes.
                 this.table.redraw();
-                if (!this.dataAvailable) {
-                    this._getPlaceholder().html(this.translations.noresultsfound);
-                }
             }));
 
             if (this.options.virtualDOM) {
@@ -676,14 +672,14 @@ class UIBootgrid {
         });
 
         this.table.on('dataProcessed', () =>  {
+            this._onDataProcessed();
+
             if (this.table.getData().length == 0) {
                 this.dataAvailable = false;
                 this._getPlaceholder().html(this.translations.noresultsfound);
             } else {
                 this.dataAvailable = true;
             }
-
-            this._onDataProcessed();
 
             // Check if the total amount of rows is known, if not, remove the "last page"
             if (!this.totalKnown && this.options.ajax) {
@@ -1100,9 +1096,9 @@ class UIBootgrid {
                     $(row.getElement()).addClass('text-muted');
                 }
             },
-            height: '20vh', /* represents the "no results found" view */
+            height: 120, /* represents the "no results found" view */
             resizable: "header",
-            placeholder: this.placeholder.prop('outerHTML'),
+            placeholder: this.placeholder[0],
             layout: 'fitColumns',
             columns: this._parseColumns(),
 

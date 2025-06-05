@@ -272,3 +272,11 @@
 .tabulator .tabulator-alert .tabulator-alert-msg.tabulator-alert-state-error {
   border: none;
 }
+
+.bootgrid-placeholder {
+    font-size: 15px;
+    text-align: center;
+    white-space: normal;
+    font-weight: 400;
+    margin: 10px;
+}
