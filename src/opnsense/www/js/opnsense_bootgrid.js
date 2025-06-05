@@ -677,20 +677,10 @@ class UIBootgrid {
             this.tableInitialized = true;
         });
 
+
+
         this.table.on('dataProcessed', () =>  {
             this._onDataProcessed();
-
-            if (this.table.getData().length == 0) {
-                this.dataAvailable = false;
-                this._getPlaceholder().html(this.translations.noresultsfound);
-            } else {
-                this.dataAvailable = true;
-            }
-
-            // Check if the total amount of rows is known, if not, remove the "last page"
-            if (!this.totalKnown && this.options.ajax) {
-                $(`#${this.id} .tabulator-paginator button[data-page=last]`).remove();
-            }
         });
 
         this.table.on('dataChanged', this._debounce(() => {
@@ -795,6 +785,18 @@ class UIBootgrid {
 
         // DOM layout changed, rewire commands
         this._wireCommands();
+
+        if (this.table.getData().length == 0) {
+            this.dataAvailable = false;
+            this._getPlaceholder().html(this.translations.noresultsfound);
+        } else {
+            this.dataAvailable = true;
+        }
+
+        // Check if the total amount of rows is known, if not, remove the "last page"
+        if (!this.totalKnown && this.options.ajax) {
+            $(`#${this.id} .tabulator-paginator button[data-page=last]`).remove();
+        }
 
         // backwards compat
         this.$element.trigger("loaded.rs.jquery.bootgrid");
