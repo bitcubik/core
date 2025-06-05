@@ -67,8 +67,14 @@ $.fn.UIBootgrid = function(params) {
         let width = null;
         if (data.width !== undefined && data.width !== '') {
             // intentionally ignore data.visible here so there is a value to go to
-            $col.css({width: data.width});
-            width = parseFloat($col.outerWidth()) + 5.0;
+            let isNumber = /^-?\d+(\.\d+)?$/.test(data.width);
+            if (!isNumber) {
+                // assume the value is a proper CSS unit, but add a margin to be safe
+                $col.css({width: data.width});
+                width = parseFloat($col.outerWidth()) + 5.0;
+            } else {
+                width = parseFloat(data.width);
+            }
         }
 
         cols[data.columnId] = {
@@ -568,17 +574,10 @@ class UIBootgrid {
 
                     if (holderHeight > height) {
                         if (!this.dataAvailable) {
-                            // console.log(this.id)
-                        // if (this.table.getData().length == 0) {
-                            // XXX
-                            // no results found, set to default row height
-                            // this.table.setHeight();
                             this.normalizeRowHeight();
-                            // this.table.setHeight();
                         } else {
                             // dead space, shrink
                             const diff = holderHeight - height;
-                            // const pad = this.dataAvailable ? 0 : 50;
                             this.table.setHeight((curTotalTableHeight - diff) + scollbarGutterOffset);
                         }
                         return;
