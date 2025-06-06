@@ -116,6 +116,7 @@ class UIBootgrid {
         this.paginationTotal = undefined;
         this.persistenceID = `${window.location.pathname}#${this.id}`;
         this.dataAvailable = false;
+        this.customCommands = null;
 
         // wrapper-specific options
         this.options = {
@@ -327,6 +328,9 @@ class UIBootgrid {
         if (del.length > 0) {
             this.options.deleteSelectedButton = true;
         }
+
+        // in the same context: check if there are other buttons defined
+        this.customCommands = this.$compatElement.find('tfoot td').children().not('[data-action]');
 
         // convert old-style formatters
         for (const [key, formatterFn] of Object.entries(bootGridOptions?.formatters ?? {})) {
@@ -742,12 +746,18 @@ class UIBootgrid {
     }
 
     _renderFooter() {
-        if (!this.options.navigation) {
-            $(`#${this.id} > .tabulator-footer`).remove();
-            return;
+        this._renderFooterCommands();
+
+        // if there are custom commands defined, inject them here
+        if (this.customCommands !== null) {
+            $(`#${this.id} > .tabulator-footer > .tabulator-footer-contents`).append(this.customCommands);
         }
 
-        this._renderFooterCommands();
+        if (!this.options.navigation) {
+            $(`#${this.id} > .tabulator-footer > .tabulator-footer-contents`).children().not('.bootgrid-footer-commands').empty().text('');
+            return;
+        }
+        
 
         // swap page counter and paginator around (old look & feel).
         // we hook in before tableBuilt, but after dataLoading
@@ -755,7 +765,6 @@ class UIBootgrid {
         // but we don't want to wait on the data before swapping
         // the UI elements around.
 
-        // XXX this doesn't work on the captive portal page. why?
         let a = $(`#${this.id} .tabulator-page-counter`)[0];
         let b = $(`#${this.id} .tabulator-paginator`)[0];
         var aparent = a.parentNode;
@@ -971,10 +980,6 @@ class UIBootgrid {
     }
 
     _renderFooterCommands() {
-        if (!this.options.navigation) {
-            return;
-        }
-
         let $footer = $(`#${this.id} > .tabulator-footer > .tabulator-footer-contents > .tabulator-paginator`);
         let $commandContainer = $('<div class="text-left bootgrid-footer-commands">');
         if (this.options.addButton) {
@@ -1130,6 +1135,9 @@ class UIBootgrid {
                 start = (totalRows === 0) ? 0 : ((currentPage - 1) * pageSize) + 1;
                 end = (totalRows === 0 || end === -1 || end > totalRows) ? totalRows : end;
 
+                if (!this.options.navigation) {
+                    return '';
+                }
                 if (this.totalKnown || !this.options.ajax) {
                     return this._translate('infosTotal', {start: start, end: end, totalRows: totalRows});
                 } else {
@@ -1147,7 +1155,7 @@ class UIBootgrid {
             },
             ajaxResponse: (url, params, response) => {
                 // handle pagination response, set last_page as appropriate
-                // the counter text (showing x of y) is handled in a module extension called "rowpage"
+                // the counter text (showing x of y) is handled in the 'paginationCounter' 
                 if (response.total_rows != undefined) {
                     // we don't know the 'last_page'
                     if (response.rowCount == params.rowCount) {
