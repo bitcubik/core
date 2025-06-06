@@ -114,6 +114,7 @@ class UIBootgrid {
         this.isResizing = false;
         this.totalKnown = false;
         this.paginationTotal = undefined;
+        this.persistence = false;
         this.persistenceID = `${window.location.pathname}#${this.id}`;
         this.dataAvailable = false;
         this.customCommands = null;
@@ -192,11 +193,10 @@ class UIBootgrid {
     }
 
     initialize() {
-        if (!localStorage.getItem(`tabulator-${this.persistenceID}-persistence`) || this.options.static) {
+        this.persistence = localStorage.getItem(`tabulator-${this.persistenceID}-persistence`);
+        if (!this.persistence || this.options.static) {
             // If the user didn't change anything on the table, assume we start blank
-            Object.keys(localStorage)
-                .filter(key => key.startsWith(`tabulator-${this.persistenceID}`))
-                .forEach(key => localStorage.removeItem(key));
+            this._setPersistence(false);
         }
 
         if (this.options.triggerEditFor) {
@@ -549,8 +549,21 @@ class UIBootgrid {
     _setPersistence(value) {
         if (value && !this.options.static) {
             localStorage.setItem(`tabulator-${this.persistenceID}-persistence`, value);
+            this.persistence = true;
+
+            if (this.options.resetButton) {
+                $(`#${this.id}-reset`).removeClass('fa-fw').addClass('fa-share-square').attr('title', this.translations.resetGrid);
+            }
         } else {
             localStorage.removeItem(`tabulator-${this.persistenceID}-persistence`);
+            Object.keys(localStorage)
+                .filter(key => key.startsWith(`tabulator-${this.persistenceID}`))
+                .forEach(key => localStorage.removeItem(key));
+            this.persistence = false;
+
+            if (this.options.resetButton) {
+                $(`#${this.id}-reset`).removeClass('fa-share-square').addClass('fa-fw');
+            }
         }
     }
 
@@ -963,11 +976,15 @@ class UIBootgrid {
         // Reset button
         if (this.options.resetButton) {
             let $resetBtn = $(`
-                <button id="${this.id}-reset" class="btn btn-default" type="button" title="Reset to defaults">
-                    <span class="icon fa-solid fa-share-square"></span>
+                <button id="${this.id}-reset" class="btn btn-default" type="button"
+                        title="${this.persistence ? this.translations.resetGrid : ''}">
+                    <span class="icon fa-solid ${this.persistence ? 'fa-share-square' : 'fa-fw'}"></span>
                 </button>
             `).on('click', (e) => {
                 e.stopPropagation();
+                if (!this.persistence) {
+                    return;
+                }
                 Object.keys(localStorage)
                     .filter(key => key.startsWith(`tabulator-${this.persistenceID}`) || key.startsWith(this.persistenceID))
                     .forEach(key => localStorage.removeItem(key));
