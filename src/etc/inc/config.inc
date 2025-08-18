@@ -1,7 +1,7 @@
 <?php
 
 /*
- * Copyright (C) 2015-2022 Franco Fichtner <franco@opnsense.org>
+ * Copyright (C) 2015-2025 Franco Fichtner <franco@opnsense.org>
  * Copyright (C) 2009 Erik Kristensen <erik@erikkristensen.com>
  * Copyright (C) 2004-2010 Scott Ullrich <sullrich@gmail.com>
  * Copyright (C) 2003-2004 Manuel Kasper <mk@neon1.net>
@@ -386,3 +386,10 @@ if (!$timezone) {
 }
 
 date_default_timezone_set($timezone);
+
+if (!function_exists('gettext_noop')) {
+    function gettext_noop(string $message): string {
+        /* a well-defined gettext() stub that does nothing */
+        return $message;
+    }
+}

@@ -37,7 +37,7 @@ function suricata_services()
         $config['OPNsense']['IDS']['general']['enabled'] == 1
     ) {
         $services[] = array(
-            'description' => gettext('Intrusion Detection'),
+            'description' => gettext_noop('Intrusion Detection'),
             'configd' => array(
                 'restart' => array('ids restart'),
                 'start' => array('ids start'),

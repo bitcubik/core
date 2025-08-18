@@ -42,8 +42,8 @@ function webgui_services()
 {
     return [[
         'pidfile' => '/var/run/lighty-webConfigurator.pid',
-        'description' => gettext('Web GUI'),
         'php' => ['restart' => ['webgui_configure_defer']],
+        'description' => gettext_noop('Web GUI'),
         'name' => 'webgui',
         'locked' => true,
     ]];

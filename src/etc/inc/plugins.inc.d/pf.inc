@@ -35,7 +35,7 @@ function pf_services()
 
     if (!isset($config['system']['disablefilter'])) {
         $services[] = array(
-            'description' => gettext('Packet Filter'),
+            'description' => gettext_noop('Packet Filter'),
             'configd' => array(
                 'restart' => array('filter reload'),
             ),
