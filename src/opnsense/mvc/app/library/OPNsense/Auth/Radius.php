@@ -265,6 +265,8 @@ class Radius extends Base implements IAuthConnector
                 $error = radius_strerror($radius);
             } elseif (!radius_put_int($radius, RADIUS_ACCT_AUTHENTIC, RADIUS_AUTH_LOCAL)) {
                 $error = radius_strerror($radius);
+            } elseif (!empty($this->calledStationId) && !radius_put_string($radius, RADIUS_CALLED_STATION_ID, $this->calledStationId)) {
+                $error = radius_strerror($radius);
             }
 
             if ($error != null) {
@@ -351,6 +353,8 @@ class Radius extends Base implements IAuthConnector
                 $error = radius_strerror($radius);
             } elseif (!radius_put_int($radius, RADIUS_ACCT_TERMINATE_CAUSE, $this->mapTerminateCause($cause))) {
                 $error = radius_strerror($radius);
+            } elseif (!empty($this->calledStationId) && !radius_put_string($radius, RADIUS_CALLED_STATION_ID, $this->calledStationId)) {
+                $error = radius_strerror($radius);
             }
 
             if ($error != null) {
@@ -436,6 +440,8 @@ class Radius extends Base implements IAuthConnector
             } elseif (!radius_put_int($radius, 53, $wraps_out)) { /* Acct-Output-Gigawords */
                 $error = radius_strerror($radius);
             } elseif (!radius_put_addr($radius, RADIUS_FRAMED_IP_ADDRESS, $ip_address)) {
+                $error = radius_strerror($radius);
+            } elseif (!empty($this->calledStationId) && !radius_put_string($radius, RADIUS_CALLED_STATION_ID, $this->calledStationId)) {
                 $error = radius_strerror($radius);
             }
 
